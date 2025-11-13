@@ -18,13 +18,42 @@ public class LTClientThread implements Runnable {
 
   @Override
   public void run() {
-    // TODO:
-    // Write your code here to continuously listen for incoming messages from the server and display them.
-    // Make use of the Datagram sockets and functions in Java https://docs.oracle.com/javase/8/docs/api/java/net/DatagramSocket.html
-    System.out.println("Client 3: Hello World!:1");
+    // Continuously listen for incoming messages from the server and display them.
+    while (true) {
+      try {
+        // Prepare a packet to receive data
+        receiveData = new byte[1024];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
-    // TODO:
-    // Update the clock based on the timestamp received from the server.
-    System.out.println("Current clock: 2");
+        // Receive the packet from the server (blocking call)
+        clientSocket.receive(receivePacket);
+
+        // Convert the received data to a string
+        String receivedMessage = new String(receivePacket.getData(), 0, receivePacket.getLength());
+
+        // Parse the message format: "message:timestamp:id"
+        String[] parts = receivedMessage.split(":");
+
+        if (parts.length >= 3) {
+          String message = parts[0];
+          int receivedTimestamp = Integer.parseInt(parts[1]);
+          String senderId = parts[2];
+
+          // Update the clock based on the timestamp received from the server
+          lc.updateClock(receivedTimestamp);
+
+          // Display the received message with sender info and timestamp
+          System.out.println("Client " + senderId + ": " + message + ":" + receivedTimestamp);
+          System.out.println("Current clock: " + lc.getCurrentTimestamp());
+        }
+
+      } catch (IOException e) {
+        // If the socket is closed or an error occurs, break the loop
+        break;
+      } catch (NumberFormatException e) {
+        // Handle invalid timestamp format
+        System.err.println("Error parsing timestamp: " + e.getMessage());
+      }
+    }
   }
 }

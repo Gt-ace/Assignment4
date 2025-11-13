@@ -31,12 +31,15 @@ public class UdpLTClient {
     Thread receiverThread = new Thread(client);
     receiverThread.start();
 
-    // TODO: This should not be counted as a message event, so the clock should not tick
-    String joinMessage = "message:timestamp:id";
+    // This should not be counted as a message event, so the clock should not tick
+    String joinMessage = "Client " + id + " joined the chat!:0:" + id;
 
-    // TODO: Send an initial "join" message to notify the other clients that a new one has connected
+    // Send an initial "join" message to notify the other clients that a new one has connected
+    sendData = joinMessage.getBytes();
+    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, ipAddress, port);
 
-    //TODO: Send the packet to the server
+    // Send the packet to the server
+    clientSocket.send(sendPacket);
 
     // Prompt the user to enter messages
     System.out.println("[Client " + id + "] Enter any message:");
@@ -56,18 +59,21 @@ public class UdpLTClient {
 
         if (!messageBody.isEmpty()) {
 
-          //TODO: Increment the Lamport clock for the message event
+          // Increment the Lamport clock for the message event
+          lc.tick();
 
-          //TODO: Get the updated timestamp and prepare the message to send
+          // Get the updated timestamp and prepare the message to send
+          int currentTimestamp = lc.getCurrentTimestamp();
 
-          String responseMessage = null;
+          String responseMessage = messageBody + ":" + currentTimestamp + ":" + id;
 
-          // TODO: Send the message to the server
+          // Send the message to the server
+          sendData = responseMessage.getBytes();
+          sendPacket = new DatagramPacket(sendData, sendData.length, ipAddress, port);
+          clientSocket.send(sendPacket);
 
-
-
-          // Print the sent message along with its timestamp
-          System.out.println("Sent message: " + messageBody + ":" + "with timestamp:");
+          // Print the sent message + its timestamp
+          System.out.println("Sent message: " + messageBody + " with timestamp: " + currentTimestamp);
         }
       } catch (Exception e) {
         e.printStackTrace();
