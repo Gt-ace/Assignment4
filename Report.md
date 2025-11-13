@@ -27,10 +27,17 @@ at different clients, so we can't always guarantee it.
 
 1. What is potential causality in Distributed Systems, and how can you model it? Why
    “potential causality” and not just “causality”?
->
+> Potential causality is the idea that if event 1 could have influenced event 2, then 1 potentially caused 2. These could be
+> events in the same process, message send/receive pairs or transitive relationships.
+> We can model it with logical clocks: 
+> Lamport: If A->B then timestamp(A) < timestamp(B)
+> Vector: Capture full causal history to determine if 2 events are causally related or concurrent
+> We call it potential causality because logical clocks capture what could have caused what, not what actually happened, so we're just tracking possibilities
 
 2. If you look at your implementation of Task 2.1, can you think of one limitation of Vector Clocks? How would you overcome the limitation?
->
+> Vector clocks dont scale well with many processes, as the size of the vector grows with the number of processes. This increases message size and overhead.
+> To overcome this, we use Dynamic Vector Clocks, which only track relevant processes
+> We can also switch to hash maps instead of full arrays and dynamically add and remove entries
 
 3. Figure 4 shows an example of enforcing causal communication using Vector Clocks. You can find a detailed explanation of this example and the broadcast algorithm being used in
    the Distributed Systems book by van Steen and Tannenbaum (see Chapter 5.2.2, page 270). Would you achieve the same result if you used the same broadcast algorithm but replaced
