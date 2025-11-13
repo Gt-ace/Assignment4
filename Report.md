@@ -2,6 +2,8 @@ Assignment 4
 ------------
 
 # Team Members
+- Arthur Van Petegem
+- Benjamin Hikaru Pfister
 
 # GitHub link to your (forked) repository (if submitting through GitHub)
 
@@ -11,10 +13,16 @@ Assignment 4
 
 1. Why did message D have to be buffered and can we now always guarantee that all clients
    display the same message order?
+- Message D arrived before the messages it depended on. The vector clock showed that the sender saw events that the receiver hadn't processed yet.
+So D was buffered until these missing messages arrived, which maintained causal order.
+- Vector clocks can only guarantee causal ordering (if A causes B, everyone can see A before B). Concurrent messages may arrive in different orders
+at different clients, so we can't always guarantee it.
 
 2. Note that the chat application uses UDP. What could be an issue with this design choice—and
    how would you fix it?
-   
+- UDP doesn't guarantee message delivery, order, or integrity. Messages can be lost, duplicated, or arrive out of order.
+- To fix this, we switch to TCP which guarantees reliable, and ordered delivery of messages.
+
 # Task 3
 
 1. What is potential causality in Distributed Systems, and how can you model it? Why

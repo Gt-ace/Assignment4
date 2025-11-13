@@ -1,7 +1,9 @@
 package com.assignment4.tasks;
 
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class VectorClientThread implements Runnable {
@@ -9,8 +11,8 @@ public class VectorClientThread implements Runnable {
   private final DatagramSocket clientSocket;
   private final VectorClock vcl;
   private final int id;
-  private final byte[] receiveData = new byte[1024]; // Buffer for incoming data
-  private final List<Message> buffer = new ArrayList<>(); // This buffer can be used for Task 2.2
+  private final byte[] receiveData = new byte[1024];
+  private final List<Message> buffer = new ArrayList<>();
 
   public VectorClientThread(DatagramSocket clientSocket, VectorClock vcl, int id) {
     this.clientSocket = clientSocket;
@@ -20,25 +22,60 @@ public class VectorClientThread implements Runnable {
 
   @Override
   public void run() {
+    while (true) {
+      try {
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        clientSocket.receive(receivePacket);
 
-  // TODO:
-  /*
-      Write your code here to continuously listen for incoming messages from the server
-      You should first process the received message and then update the vector clock based on the received message (you can use .replaceAll("[\\[\\]]", "").split(",\\s*"); to split a received vector clock into its components)
-      Then display the received message and its vector clock
-  */
+        String receivedMessage = new String(receivePacket.getData(), 0, receivePacket.getLength());
+        String[] parts = receivedMessage.split(":");
 
-    displayMessage(null);
+        if (parts.length >= 3) {
+          String messageBody = parts[0];
+          String vectorClockStr = parts[1];
+          int senderId = Integer.parseInt(parts[2]);
 
+          String[] clockValues = vectorClockStr.replaceAll("[\\[\\]]", "").split(",\\s*");
+          VectorClock receivedClock = new VectorClock(4);
+          for (int i = 0; i < clockValues.length; i++) {
+            receivedClock.setVectorClock(i, Integer.parseInt(clockValues[i]));
+          }
+
+          Message message = new Message(messageBody, receivedClock, senderId);
+
+          if (vcl.checkAcceptMessage(senderId, receivedClock)) {
+            displayMessage(message);
+            checkBufferedMessages();
+          } else {
+            buffer.add(message);
+          }
+        }
+      } catch (Exception e) {
+        break;
+      }
+    }
   }
 
-// TODO:
-/*
-    This method should print out the message (e.g. Client 1: Hello World!: [1, 0, 0]) and update
-    the vector clock without ticking on receive. Then it should display the the updated vector clock.
-    Example: Initial clock [0,0,0], updated clock after message from Client 1: [1, 0, 0]
-*/
   private void displayMessage(Message message) {
+    System.out.println("Client " + message.getSenderID() + ": " + message.getMessage() + ": " + message.getClock().showClock());
+    vcl.updateClock(message.getClock());
+    System.out.println("Current clock: " + vcl.showClock());
+  }
 
+  private void checkBufferedMessages() {
+    boolean foundMessage = true;
+    while (foundMessage) {
+      foundMessage = false;
+      Iterator<Message> iterator = buffer.iterator();
+      while (iterator.hasNext()) {
+        Message bufferedMessage = iterator.next();
+        if (vcl.checkAcceptMessage(bufferedMessage.getSenderID(), bufferedMessage.getClock())) {
+          displayMessage(bufferedMessage);
+          iterator.remove();
+          foundMessage = true;
+          break;
+        }
+      }
+    }
   }
 }
